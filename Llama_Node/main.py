@@ -6,7 +6,7 @@ from confluent_kafka import Consumer
 def chat(prompt):
     response = llm.create_chat_completion(
         messages=[
-            {"role" : "system", "content" : "You are an assistant"},
+            {"role" : "system", "content" : "You are an assistant who will always end with '\n'"},
             {"role" : "user", "content" : prompt},
         ],
         stream=True
@@ -19,7 +19,14 @@ def chat(prompt):
             print(delta["content"], end="", flush=True)
 
 
+conf = {
+    'bootstrap.servers' : '0.0.0.0:9092',
+    'group.id' : '1',
+    'auto.offset.reset' : 'earliest'
+}
 
+consumer = Consumer(conf)
+consumer.subscribe(["input_prompts"])
 
 
 llm = Llama.from_pretrained(
@@ -40,6 +47,9 @@ llm = Llama.from_pretrained(
 # )
 
 # print(output["choices"][0]["text"])
-
 while True:
-    chat(input("\nEnter Prompt : "))
+    data = consumer.poll()
+    if not data:
+        continue
+    else:
+        chat(data.value().decode("utf-8"))
