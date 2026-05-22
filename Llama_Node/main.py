@@ -3,20 +3,32 @@ from confluent_kafka import Consumer
 
 
 
-def chat(prompt):
-    response = llm.create_chat_completion(
-        messages=[
-            {"role" : "system", "content" : "You are an assistant who will always end with '\n'"},
-            {"role" : "user", "content" : prompt},
-        ],
-        stream=True
+def chat(prompt, stream):
 
-    )
+    if stream == True:
+        response = llm.create_chat_completion(
+            messages=[
+                {"role" : "system", "content" : "You are an assistants"},
+                {"role" : "user", "content" : prompt},
+            ],
+            stream=True
+        )
 
-    for chunk in response:
-        delta = chunk["choices"][0]["delta"]
-        if "content" in delta : 
-            print(delta["content"], end="", flush=True)
+        for chunk in response:
+            delta = chunk["choices"][0]["delta"]
+            if "content" in delta : 
+                print(delta["content"], end="", flush=True)
+
+    else:
+        response = llm.create_chat_completion(
+            messages=[
+                {"role" : "system", "content" : "You are an assistant"},
+                {"role" : "user", "content" : prompt},
+            ],
+            stream=False
+        )
+
+        print(response["choices"][0]["message"]["content"])
 
 
 conf = {
@@ -37,19 +49,10 @@ llm = Llama.from_pretrained(
 )
 
 
-# output = llm(
-#     prompt='''
-# \
-# ''',
-#     stop=["Q:", "\n"],
-#     max_tokens=1024,
-#     echo=False
-# )
 
-# print(output["choices"][0]["text"])
 while True:
     data = consumer.poll()
     if not data:
         continue
     else:
-        chat(data.value().decode("utf-8"))
+        chat(data.value().decode("utf-8"), True)
