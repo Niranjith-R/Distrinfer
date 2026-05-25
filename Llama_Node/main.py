@@ -34,7 +34,7 @@ def chat(prompt, stream):
 conf = {
     'bootstrap.servers' : '0.0.0.0:9092',
     'group.id' : '1',
-    'auto.offset.reset' : 'earliest'
+    'auto.offset.reset' : 'latest'
 }
 
 consumer = Consumer(conf)
@@ -48,7 +48,7 @@ llm = Llama.from_pretrained(
     n_ctx = 200000,
 )
 
-
+print("============================================================================")
 
 while True:
     data = consumer.poll()

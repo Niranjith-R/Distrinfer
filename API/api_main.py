@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from confluent_kafka import Producer
 import hashlib
+from sqlmodel import SQLModel, Field
+
 
 
 
@@ -12,9 +14,10 @@ conf = {
     'client.id' : "1",
     'acks' : '0'
 }
-
-
 prod = Producer(conf)
+
+
+
 
 
 
