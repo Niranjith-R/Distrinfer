@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from confluent_kafka import Producer
 import hashlib
 from sqlmodel import SQLModel, Field
+from enum import Enum
 
 
 
@@ -17,8 +18,22 @@ conf = {
 prod = Producer(conf)
 
 
+class Status(Enum):
+    Success = 1
+    Pending = 2
+    Failed = 3
 
 
+class Data(SQLModel, table = True):
+    id : str = Field(default = None, primary_key= True)
+    prompt : str = Field(nullable = False)
+    infer : str = Field(default = "-")
+    status : Status = Field(default = Status.Pending, nullable = False)
+
+class User(SQLModel, table = True):
+    id : int = Field(default = None, primary_key = True)
+    username : str = Field(nullable = False)
+    
 
 
 @app.get('/')
