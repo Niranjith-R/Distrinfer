@@ -1,7 +1,22 @@
 from fastapi import FastAPI
+from confluent_kafka import Producer
+import hashlib
+
 
 
 app = FastAPI()
+
+
+conf = {
+    'bootstrap.servers' : '0.0.0.0:9092',
+    'client.id' : "1",
+    'acks' : '0'
+}
+
+
+prod = Producer(conf)
+
+
 
 @app.get('/')
 async def root():
@@ -10,8 +25,12 @@ async def root():
 
 @app.post("/query")
 async def inference(prompt):
+    prod.produce("input_prompts", prompt)
+    m = hashlib.sha256()
+    m.update(prompt.encode("utf-8"))
     return {
-        "data" : prompt 
+        "data" : prompt,
+        "hash" : m.hexdigest()
     }
 
 
