@@ -3,6 +3,7 @@ from confluent_kafka import Producer
 import hashlib
 from sqlmodel import SQLModel, Field
 from enum import Enum
+import time
 
 
 
@@ -33,8 +34,10 @@ class Data(SQLModel, table = True):
 class User(SQLModel, table = True):
     id : int = Field(default = None, primary_key = True)
     username : str = Field(nullable = False)
-    
-
+    # Find the proper way to store passwords
+    # Found it, Argon2id
+    passwrd : str = Field(default = None, nullable = False)
+    UID : int = Field(default = None)
 
 @app.get('/')
 async def root():
@@ -46,6 +49,7 @@ async def inference(prompt):
     prod.produce("input_prompts", prompt)
     m = hashlib.sha256()
     m.update(prompt.encode("utf-8"))
+    m.update(str(time.time()).encode("utf-8"))
     return {
         "data" : prompt,
         "hash" : m.hexdigest()
@@ -58,3 +62,5 @@ async def view_data(prompt_id : str):
         "don't know ? " : "Use this path to retrieve the stored data", 
         "id" : f"{prompt_id}"
         }
+
+
