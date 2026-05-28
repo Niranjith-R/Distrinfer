@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from typing import Annotated
 from confluent_kafka import Producer
 import hashlib
-from sqlmodel import SQLModel, Field, Relationship, create_engine
+from sqlmodel import SQLModel, Field, Relationship, create_engine, Session
 from enum import Enum
 import time
 
@@ -30,14 +31,15 @@ class Status(Enum):
 
 
 class Data(SQLModel, table = True):
-    id : str = Field(default = None, primary_key= True)
+    id: int | None = Field(default=None, primary_key=True)
     prompt : str = Field(nullable = False)
     infer : str = Field(default = "-")
     status : Status = Field(default = Status.Pending, nullable = False)
+    Hash : str
 
     
-    User_id : int = Field(default = None, foreign_key = "user.id")
-    user : User = Relationship(back_populates = "user")
+    # User_id : int = Field(default = None, foreign_key = "user.id")
+    # user : User = Relationship(back_populates = "User")
 
 class User(SQLModel, table = True):
     id : int = Field(default = None, primary_key = True)
@@ -50,6 +52,14 @@ class User(SQLModel, table = True):
 
 def create_table():
     SQLModel.metadata.create_all(engine)
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+
+
+Session_dep = Annotated[Session, Depends(get_session)]
 
 
 @app.on_event("startup")
@@ -64,14 +74,22 @@ async def root():
 
 
 @app.post("/query")
-async def inference(prompt):
-    prod.produce("input_prompts", prompt)
+async def inference(prompt : Data, session : Session_dep):
+    prod.produce("input_prompts", prompt.prompt.encode("utf-8"))
     m = hashlib.sha256()
-    m.update(prompt.encode("utf-8"))
+    m.update(prompt.prompt.encode("utf-8"))
     m.update(str(time.time()).encode("utf-8"))
+    hex = m.hexdigest()
+    prompt.Hash = hex
+    session.add(prompt)
+    session.commit()
+    session.refresh(prompt)
     return {
-        "data" : prompt,
-        "hash" : m.hexdigest()
+        "data" : {
+            "prompt" : prompt.prompt,
+            "status" : prompt.status,
+        },
+        "hash" : hex
     }
 
 
