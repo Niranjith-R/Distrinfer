@@ -25,9 +25,9 @@ engine = create_engine(DATABASE_URL, echo = True)
 
 
 class Status(Enum):
-    Success = 1
-    Pending = 2
-    Failed = 3
+    Success = "Success"
+    Pending = "Pending"
+    Failed = "Failed"
 
 
 class Data(SQLModel, table = True):
