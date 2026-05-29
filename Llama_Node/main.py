@@ -31,6 +31,10 @@ def chat(prompt, stream):
         print(response["choices"][0]["message"]["content"])
 
 
+
+# Inference Backend should update the DB after infered. 
+
+
 conf = {
     'bootstrap.servers' : '0.0.0.0:9092',
     'group.id' : '1',

@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from typing import Annotated
 from confluent_kafka import Producer
 import hashlib
-from sqlmodel import SQLModel, Field, Relationship, create_engine, Session
+from sqlmodel import SQLModel, Field, Relationship, create_engine, Session, select
 from enum import Enum
 import time
 
@@ -94,10 +94,16 @@ async def inference(prompt : Data, session : Session_dep):
 
 
 @app.get("/query/{prompt_id}")
-async def view_data(prompt_id : str):
+async def view_data(prompt_id : str, session : Session_dep):
+
+    # Logic to Retrieve Data
+    statement = select(Data).where(Data.Hash == prompt_id)
+    Results = session.exec(statement)
+
     return {
-        "don't know ? " : "Use this path to retrieve the stored data", 
-        "id" : f"{prompt_id}"
+        # "don't know ? " : "Use this path to retrieve the stored data", 
+        "id" : f"{prompt_id}",
+        "Data" : Results[0],
         }
 
 
