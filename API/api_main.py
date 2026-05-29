@@ -99,11 +99,15 @@ async def view_data(prompt_id : str, session : Session_dep):
     # Logic to Retrieve Data
     statement = select(Data).where(Data.Hash == prompt_id)
     Results = session.exec(statement)
-
-    return {
-        # "don't know ? " : "Use this path to retrieve the stored data", 
-        "id" : f"{prompt_id}",
-        "Data" : Results[0],
-        }
+    for result in Results :
+        return {
+            # "don't know ? " : "Use this path to retrieve the stored data", 
+            "id" : f"{prompt_id}",
+            "status" : result.status,
+            "Data" : {
+                "prompt" : result.prompt,
+                "infered" : result.infer
+            }
+            }
 
 
