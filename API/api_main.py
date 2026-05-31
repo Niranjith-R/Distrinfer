@@ -66,6 +66,7 @@ Session_dep = Annotated[Session, Depends(get_session)]
 @app.on_event("startup")
 def on_startup():
     create_table()
+    # Call kafka_admin.py to set the number of partitions to ensure concurrency.
 
 
 
