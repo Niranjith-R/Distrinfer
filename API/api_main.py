@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from typing import Annotated
 from confluent_kafka import Producer
 import hashlib
@@ -15,7 +15,8 @@ app = FastAPI()
 conf = {
     'bootstrap.servers' : '0.0.0.0:9092',
     'client.id' : "1",
-    'acks' : '0'
+    'acks' : 'all',
+    'retries' : 3
 }
 prod = Producer(conf)
 
@@ -75,7 +76,14 @@ async def root():
 
 @app.post("/query")
 async def inference(prompt : Data, session : Session_dep):
-    prod.produce("input_prompts", prompt.prompt.encode("utf-8"))
+
+    def delivery_report(err, msg):
+        if err is not None:
+            raise HTTPException(status_code=502, detail="Kafka Delivery Failed")
+        
+    prod.produce("input_prompts", prompt.prompt.encode("utf-8"), callback = delivery_report)
+    prod.poll(0)
+    prod.flush(0)
     m = hashlib.sha256()
     m.update(prompt.prompt.encode("utf-8"))
     m.update(str(time.time()).encode("utf-8"))

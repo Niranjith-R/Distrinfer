@@ -55,7 +55,7 @@ llm = Llama.from_pretrained(
 print("============================================================================")
 
 while True:
-    data = consumer.poll()
+    data = consumer.poll(timeout=1.0)
     if not data:
         continue
     else:
