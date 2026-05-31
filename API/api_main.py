@@ -42,7 +42,7 @@ class Data(SQLModel, table = True):
     # user : User = Relationship(back_populates = "User")
 
 class User(SQLModel, table = True):
-    id : int = Field(default = None, primary_key = True)
+    id : int = Field(default = None, primary_key = True, nullable = False)
     username : str = Field(nullable = False)
     # Find the proper way to store passwords
     # Found it, Argon2id
@@ -111,3 +111,34 @@ async def view_data(prompt_id : str, session : Session_dep):
             }
 
 
+@app.get("/user")
+async def list_users(session : Session_dep):
+    statement = select(User)
+    Users = session.exec(statement)
+    data = []
+    for user in Users:
+        data.append(user)
+    return {"Current Users" : data}
+
+
+@app.post("/user")
+async def create_user(content : User, session : Session_dep):
+    session.add(content)
+    session.commit()
+    session.refresh(content)
+    return content
+
+@app.put("/user/{user}")
+async def update_user(content : User, user : str, session : Session_dep):
+    statement = select(User).where(User.UID == user)
+    result = session.exec(statement)
+    data_obj = result.one()
+    data_cpy = data_obj.model_copy()
+    data_obj.id = content.id
+    data_obj.username = content.username
+    data_obj.passwrd = content.passwrd
+    data_obj.UID = content.UID
+    session.commit(data_obj)
+    session.refresh(data_obj)
+    return {"old" : data_cpy,
+            "new" : data_obj}
