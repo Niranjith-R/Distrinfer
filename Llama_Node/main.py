@@ -1,5 +1,8 @@
 from llama_cpp import Llama
 from confluent_kafka import Consumer
+import psycopg2
+from psycopg2.extensions import AsIs
+import json
 
 
 
@@ -28,7 +31,7 @@ def chat(prompt, stream):
             stream=False
         )
 
-        print(response["choices"][0]["message"]["content"])
+        return response["choices"][0]["message"]["content"]
 
 
 
@@ -40,6 +43,9 @@ conf = {
     'group.id' : '1',
     'auto.offset.reset' : 'latest'
 }
+
+conn = psycopg2.connect(host = "192.168.1.8", dbname = "Distrinfer", user = "postgres", password = 'sarangi')
+curse = conn.cursor()
 
 consumer = Consumer(conf)
 consumer.subscribe(["input_prompts"])
@@ -59,4 +65,11 @@ while True:
     if not data:
         continue
     else:
-        chat(data.value().decode("utf-8"), True)
+        print("Query Recieved")
+        json_ = json.loads(data.value().decode("utf-8"))
+        infer = chat(json_.get("prompt"), False)
+        hex_value = json_.get("hex")
+        Query = f"UPDATE DATA SET infer = %s, status = %s WHERE Hash = %s"
+        curse.execute(Query, (infer, "Success", hex_value))
+        conn.commit()
+        print("Query Infered")

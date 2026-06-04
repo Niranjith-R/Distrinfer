@@ -5,6 +5,7 @@ import hashlib
 from sqlmodel import SQLModel, Field, Relationship, create_engine, Session, select
 from enum import Enum
 import time
+import json
 
 
 
@@ -22,7 +23,7 @@ prod = Producer(conf)
 
 
 DATABASE_URL = "postgresql://postgres:sarangi@192.168.1.8:5432/Distrinfer"
-engine = create_engine(DATABASE_URL, echo = True)
+engine = create_engine(DATABASE_URL, echo = False)
 
 
 class Status(Enum):
@@ -36,8 +37,8 @@ class Data(SQLModel, table = True):
     prompt : str = Field(nullable = False)
     infer : str = Field(default = "-")
     status : Status = Field(default = Status.Pending, nullable = False)
-    Hash : str
-
+    hash : str
+    UID : int = Field(default = None, nullable = False)
     
     # User_id : int = Field(default = None, foreign_key = "user.id")
     # user : User = Relationship(back_populates = "User")
@@ -81,15 +82,23 @@ async def inference(prompt : Data, session : Session_dep):
     def delivery_report(err, msg):
         if err is not None:
             raise HTTPException(status_code=502, detail="Kafka Delivery Failed")
-        
-    prod.produce("input_prompts", prompt.prompt.encode("utf-8"), callback = delivery_report)
-    prod.poll(0)
-    prod.flush(0)
+
     m = hashlib.sha256()
     m.update(prompt.prompt.encode("utf-8"))
     m.update(str(time.time()).encode("utf-8"))
     hex = m.hexdigest()
-    prompt.Hash = hex
+
+    data = {
+        "prompt" : prompt.prompt,
+        "UID" : prompt.UID,
+        "hex" :   hex
+    }
+    print(json.dumps(data))
+    prod.produce("input_prompts", json.dumps(data).encode("utf-8"), callback = delivery_report)
+    prod.poll(0)
+    prod.flush(0)
+    
+    prompt.hash = hex
     session.add(prompt)
     session.commit()
     session.refresh(prompt)
@@ -106,7 +115,7 @@ async def inference(prompt : Data, session : Session_dep):
 async def view_data(prompt_id : str, session : Session_dep):
 
     # Logic to Retrieve Data
-    statement = select(Data).where(Data.Hash == prompt_id)
+    statement = select(Data).where(Data.hash == prompt_id)
     Results = session.exec(statement)
     for result in Results :
         return {
@@ -141,13 +150,25 @@ async def create_user(content : User, session : Session_dep):
 async def update_user(content : User, user : str, session : Session_dep):
     statement = select(User).where(User.UID == user)
     result = session.exec(statement)
+    print("here")
     data_obj = result.one()
     data_cpy = data_obj.model_copy()
     data_obj.id = content.id
     data_obj.username = content.username
     data_obj.passwrd = content.passwrd
     data_obj.UID = content.UID
-    session.commit(data_obj)
+    print("Here")
+    session.commit()
     session.refresh(data_obj)
     return {"old" : data_cpy,
             "new" : data_obj}
+
+@app.delete("/user/{user}")
+async def delete_user(user : int, session : Session_dep):
+    statement = select(User).where(User.UID == user)
+    result = session.exec(statement).first()
+    if not result:
+        raise HTTPException(status_code=404, detail= "Entry Not Found")
+    session.delete(result)
+    session.commit()
+    return {"status" : "ok" }
