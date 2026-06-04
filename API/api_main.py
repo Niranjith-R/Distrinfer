@@ -37,7 +37,8 @@ class Data(SQLModel, table = True):
     prompt : str = Field(nullable = False)
     infer : str = Field(default = "-")
     status : Status = Field(default = Status.Pending, nullable = False)
-    hash : str
+    host: str | None = Field(default=None, nullable=True)
+    hash : str = Field(default=None, nullable= True)
     UID : int = Field(default = None, nullable = False)
     
     # User_id : int = Field(default = None, foreign_key = "user.id")
@@ -58,7 +59,6 @@ def create_table():
 def get_session():
     with Session(engine) as session:
         yield session
-
 
 
 Session_dep = Annotated[Session, Depends(get_session)]

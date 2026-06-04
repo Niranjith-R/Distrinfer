@@ -3,6 +3,7 @@ from confluent_kafka import Consumer
 import psycopg2
 from psycopg2.extensions import AsIs
 import json
+from socket import gethostname
 
 
 
@@ -65,11 +66,11 @@ while True:
     if not data:
         continue
     else:
-        print("Query Recieved")
         json_ = json.loads(data.value().decode("utf-8"))
+        print("Query Recieved : ", json_.get("prompt"))
         infer = chat(json_.get("prompt"), False)
         hex_value = json_.get("hex")
-        Query = f"UPDATE DATA SET infer = %s, status = %s WHERE Hash = %s"
-        curse.execute(Query, (infer, "Success", hex_value))
+        Query = f"UPDATE DATA SET infer = %s, status = %s, host = %s WHERE Hash = %s"
+        curse.execute(Query, (infer, "Success", gethostname(),hex_value))
         conn.commit()
         print("Query Infered")
