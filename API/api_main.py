@@ -2,7 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException
 from typing import Annotated
 from confluent_kafka import Producer
 import hashlib
-from sqlmodel import SQLModel, Field, Relationship, create_engine, Session, select
+from sqlmodel import SQLModel, Field, create_engine, Session, select
+import kafka_admin
 from enum import Enum
 import time
 import json
@@ -67,6 +68,7 @@ Session_dep = Annotated[Session, Depends(get_session)]
 @app.on_event("startup")
 def on_startup():
     create_table()
+    kafka_admin.run()
     # Call kafka_admin.py to set the number of partitions to ensure concurrency.
 
 

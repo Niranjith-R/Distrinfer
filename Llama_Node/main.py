@@ -15,7 +15,8 @@ def chat(prompt, stream):
                 {"role" : "system", "content" : "You are an assistants"},
                 {"role" : "user", "content" : prompt},
             ],
-            stream=True
+            stream=True,
+            max_tokens=2048
         )
 
         for chunk in response:
@@ -29,7 +30,8 @@ def chat(prompt, stream):
                 {"role" : "system", "content" : "You are an assistant"},
                 {"role" : "user", "content" : prompt},
             ],
-            stream=False
+            stream=False,
+            max_tokens=2048
         )
 
         return response["choices"][0]["message"]["content"]
@@ -53,10 +55,10 @@ consumer.subscribe(["input_prompts"])
 
 
 llm = Llama.from_pretrained(
-    repo_id="Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+    repo_id="Qwen/Qwen2.5-0.5B-Instruct-GGUF",
     filename="*q8_0.gguf",
     verbose = False,
-    n_ctx = 200000,
+    n_ctx = 32768,
 )
 
 print("============================================================================")

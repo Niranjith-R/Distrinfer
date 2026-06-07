@@ -1,0 +1,4 @@
+llama-cpp-python
+confluent-kafka
+psycopg2-binary
+huggingface-hub

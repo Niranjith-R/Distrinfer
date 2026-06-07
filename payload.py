@@ -7,7 +7,7 @@ count = 0
 with open("payload.txt", "r") as file:
     content = file.readlines()
     for i in content:
-        if count == 10:
+        if count == 1000:
             break
         payload = { 
             "prompt" : i,
