@@ -1,16 +1,12 @@
-# from argon2 import PasswordHasher
-import psycopg2
+from celery import Celery
 
-# ph = PasswordHasher()
 
-# hash = ph.hash("This is a test")
+app = Celery('tasks',broker="amqp://admin:admin@localhost:5672/")
 
-# print(hash)
 
-# print(ph.verify(hash, "This is a test"))
+print("This is a test")
+@app.task
+def add(x,y):
+    print(x+y)
+    return x+y
 
-conn = psycopg2.connect(host = "192.168.1.8", dbname = "Distrinfer", user = "postgres", password = 'sarangi')
-curse = conn.cursor()
-
-curse.execute("SELECT * FROM DATA")
-print(curse.fetchall())
