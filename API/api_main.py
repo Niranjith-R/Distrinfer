@@ -1,9 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException
+from .Llama_Node.inference_node import infer
 from typing import Annotated
-from confluent_kafka import Producer
 import hashlib
 from sqlmodel import SQLModel, Field, create_engine, Session, select
-import kafka_admin
 from enum import Enum
 import time
 import json
@@ -12,16 +11,6 @@ import json
 
 
 app = FastAPI()
-
-
-conf = {
-    'bootstrap.servers' : '0.0.0.0:9092',
-    'client.id' : "1",
-    'acks' : 'all',
-    'retries' : 3
-}
-prod = Producer(conf)
-
 
 DATABASE_URL = "postgresql://postgres:sarangi@192.168.1.8:5432/Distrinfer"
 engine = create_engine(DATABASE_URL, echo = False)
@@ -68,8 +57,6 @@ Session_dep = Annotated[Session, Depends(get_session)]
 @app.on_event("startup")
 def on_startup():
     create_table()
-    kafka_admin.run()
-    # Call kafka_admin.py to set the number of partitions to ensure concurrency.
 
 
 
@@ -96,10 +83,8 @@ async def inference(prompt : Data, session : Session_dep):
         "hex" :   hex
     }
     print(json.dumps(data))
-    prod.produce("input_prompts", json.dumps(data).encode("utf-8"), callback = delivery_report)
-    prod.poll(0)
-    prod.flush(0)
-    
+    #Push to Celery
+    infer.delay(json.dumps(data)) 
     prompt.hash = hex
     session.add(prompt)
     session.commit()
@@ -115,16 +100,14 @@ async def inference(prompt : Data, session : Session_dep):
 
 @app.get("/query/{prompt_id}")
 async def view_data(prompt_id : str, session : Session_dep):
-
-    # Logic to Retrieve Data
     statement = select(Data).where(Data.hash == prompt_id)
     Results = session.exec(statement)
     for result in Results :
         return {
-            # "don't know ? " : "Use this path to retrieve the stored data", 
             "id" : f"{prompt_id}",
             "status" : result.status,
             "Data" : {
+                "host" : result.host,
                 "prompt" : result.prompt,
                 "infered" : result.infer
             }
