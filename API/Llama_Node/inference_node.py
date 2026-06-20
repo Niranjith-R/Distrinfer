@@ -35,7 +35,7 @@ def infer(input):
                 {"role" : "user", "content" : prompt},
             ],
             stream=False,
-            max_tokens=2048
+            max_tokens=512
         )
     
     update_infer_sql = "UPDATE DATA SET infer = %s, status = %s, host = %s WHERE hash = %s"
