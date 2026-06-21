@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
-from .Llama_Node.inference_node import infer
-from .utils import get_hashed_passwrd
+from .Llama_Node.inference_node import infer, live
 from typing import Annotated
 import hashlib
 from sqlmodel import SQLModel, Field, create_engine, Session, select
@@ -42,6 +41,10 @@ class User(SQLModel, table = True):
     # Found it, Argon2id
     passwrd : str = Field(default = None, nullable = False)
     UID : int = Field(default = None)
+
+
+class Live_Model(SQLModel, table = False):
+    prompt : str
 
 
 def create_table():
@@ -113,6 +116,17 @@ async def view_data(prompt_id : str, session : Session_dep):
                 "infered" : result.infer
             }
             }
+
+
+@app.post("/live")
+async def live_raw_data(prompt: Live_Model, session : Session_dep):
+
+    infered_data = live.delay(prompt.prompt)
+
+    while infered_data.ready() == False:
+        time.sleep(0.1)
+    return infered_data.get()
+
 
 
 @app.get("/user")
