@@ -14,7 +14,8 @@ It is **not** designed for real-time, latency-sensitive, single-request inferenc
 
 ## Architecture
 
-*(Insert architecture diagram here)*
+<img width="700" height="600" alt="New Arch" src="https://github.com/user-attachments/assets/a6cbd069-7c4d-428e-9f65-be3f999114e4" />
+
 
 At a high level:
 
