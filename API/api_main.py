@@ -29,18 +29,18 @@ class Data(SQLModel, table = True):
     status : Status = Field(default = Status.Pending, nullable = False)
     host: str | None = Field(default=None, nullable=True)
     hash : str = Field(default=None, nullable= True)
-    UID : int = Field(default = None, nullable = False)
+    # UID : int = Field(default = None, nullable = False)
     
     # User_id : int = Field(default = None, foreign_key = "user.id")
     # user : User = Relationship(back_populates = "User")
 
-class User(SQLModel, table = True):
-    id : int = Field(default = None, primary_key = True, nullable = False)
-    username : str = Field(nullable = False)
-    # Find the proper way to store passwords
-    # Found it, Argon2id
-    passwrd : str = Field(default = None, nullable = False)
-    UID : int = Field(default = None)
+# class User(SQLModel, table = True):
+#     id : int = Field(default = None, primary_key = True, nullable = False)
+#     username : str = Field(nullable = False)
+#     # Find the proper way to store passwords
+#     # Found it, Argon2id
+#     passwrd : str = Field(default = None, nullable = False)
+#     UID : int = Field(default = None)
 
 
 class Live_Model(SQLModel, table = False):
@@ -64,9 +64,14 @@ def on_startup():
 
 
 
-@app.get('/')
-async def root():
-    return {"data" : "Whatcha doing here foo"}
+@app.post("/")
+async def live_raw_data(prompt: Live_Model, session : Session_dep):
+
+    infered_data = live.delay(prompt.prompt)
+
+    while infered_data.ready() == False:
+        time.sleep(0.1)
+    return infered_data.get()
 
 
 @app.post("/query")
@@ -83,7 +88,7 @@ async def inference(prompt : Data, session : Session_dep):
 
     data = {
         "prompt" : prompt.prompt,
-        "UID" : prompt.UID,
+        "UID" : 1,
         "hex" :   hex
     }
     print(json.dumps(data))
@@ -118,57 +123,50 @@ async def view_data(prompt_id : str, session : Session_dep):
             }
 
 
-@app.post("/live")
-async def live_raw_data(prompt: Live_Model, session : Session_dep):
-
-    infered_data = live.delay(prompt.prompt)
-
-    while infered_data.ready() == False:
-        time.sleep(0.1)
-    return infered_data.get()
 
 
 
-@app.get("/user")
-async def list_users(session : Session_dep):
-    statement = select(User)
-    Users = session.exec(statement)
-    data = []
-    for user in Users:
-        data.append(user)
-    return {"Current Users" : data}
+
+# @app.get("/user")
+# async def list_users(session : Session_dep):
+#     statement = select(User)
+#     Users = session.exec(statement)
+#     data = []
+#     for user in Users:
+#         data.append(user)
+#     return {"Current Users" : data}
 
 
-@app.post("/user")
-async def create_user(content : User, session : Session_dep):
-    session.add(content)
-    session.commit()
-    session.refresh(content)
-    return content
+# @app.post("/user")
+# async def create_user(content : User, session : Session_dep):
+#     session.add(content)
+#     session.commit()
+#     session.refresh(content)
+#     return content
 
-@app.put("/user/{user}")
-async def update_user(content : User, user : str, session : Session_dep):
-    statement = select(User).where(User.UID == user)
-    result = session.exec(statement)
-    print("here")
-    data_obj = result.one()
-    data_cpy = data_obj.model_copy()
-    data_obj.id = content.id
-    data_obj.username = content.username
-    data_obj.passwrd = content.passwrd
-    data_obj.UID = content.UID
-    print("Here")
-    session.commit()
-    session.refresh(data_obj)
-    return {"old" : data_cpy,
-            "new" : data_obj}
+# @app.put("/user/{user}")
+# async def update_user(content : User, user : str, session : Session_dep):
+#     statement = select(User).where(User.UID == user)
+#     result = session.exec(statement)
+#     print("here")
+#     data_obj = result.one()
+#     data_cpy = data_obj.model_copy()
+#     data_obj.id = content.id
+#     data_obj.username = content.username
+#     data_obj.passwrd = content.passwrd
+#     data_obj.UID = content.UID
+#     print("Here")
+#     session.commit()
+#     session.refresh(data_obj)
+#     return {"old" : data_cpy,
+#             "new" : data_obj}
 
-@app.delete("/user/{user}")
-async def delete_user(user : int, session : Session_dep):
-    statement = select(User).where(User.UID == user)
-    result = session.exec(statement).first()
-    if not result:
-        raise HTTPException(status_code=404, detail= "Entry Not Found")
-    session.delete(result)
-    session.commit()
-    return {"status" : "ok" }
+# @app.delete("/user/{user}")
+# async def delete_user(user : int, session : Session_dep):
+#     statement = select(User).where(User.UID == user)
+#     result = session.exec(statement).first()
+#     if not result:
+#         raise HTTPException(status_code=404, detail= "Entry Not Found")
+#     session.delete(result)
+#     session.commit()
+#     return {"status" : "ok" }

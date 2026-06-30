@@ -4,26 +4,33 @@ import psycopg2
 from llama_cpp import Llama
 import json
 from socket import gethostname
+from os import getenv
 
 
 
 conn = curse = llm = None
+
+#Add RabbitMQ connection details as broker and database url as Backend
+
 app = Celery("inference_node",
-              broker="amqp://admin:admin@localhost:5672/",
-              backend="db+postgresql://postgres:sarangi@192.168.1.8:5432/Distrinfer"
+              broker="- - - - - - -",
+              backend="- - - - - - -"
              )
 
 
 @worker_process_init.connect
 def init_worker(**kwargs):
     global conn, curse, llm
-    conn = psycopg2.connect(host = "192.168.1.8", dbname = "Distrinfer", user = "postgres", password = 'sarangi')
+
+    # Add you Database Connection here
+    
+    conn = psycopg2.connect(host = getenv("db_host", 'localhost'), dbname = getenv("db_name","Distrinfer"), user = getenv("db_user","postgres"), password = getenv("db_pass",'postgres'))
     curse = conn.cursor()
     llm = Llama.from_pretrained(
-        repo_id="Qwen/Qwen2.5-0.5B-Instruct-GGUF",
-        filename="*q8_0.gguf",
-        verbose = False,
-        n_ctx = 32768,
+        repo_id=getenv("repo_id", default="Qwen/Qwen2.5-0.5B-Instruct-GGUF"),
+        filename=getenv("filename", "*q8_0.gguf"),
+        verbose = getenv("verbose", False),
+        n_ctx = getenv("n_ctx", 32768),
     )
 
 
