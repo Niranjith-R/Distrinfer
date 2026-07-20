@@ -144,8 +144,10 @@ Build `llama-cpp-python` with the `CMAKE_ARGS` matching your target backend befo
 
 | Configuration | Time |
 |---|---|
-| R5 3400G only (Celery) | 15:21:71 |
-| R5 3400G + i3 6006U (Celery, dynamic dispatch) | 11:43:02 |
+| R5 3400G only (Celery) | 21:09:71 |
+| R5 3400G + R5 7530U (Celery) | 12:34:02 |
+| R5 3400G + R5 7530U + i3 6006U (Celery) | 8:55:02 |
+| R5 3400G + i3 6006U (Kafka) | 1:05:51:02 |
 
 Adding a second, slower node still reduced total time by roughly 24%, since Celery dispatches dynamically rather than via static partitioning — the bottleneck node simply gets fewer tasks rather than stalling the whole batch.
 
@@ -158,4 +160,4 @@ Adding a second, slower node still reduced total time by roughly 24%, since Cele
 
 ## License
 
-TBD
+GPL-3.0 license 
