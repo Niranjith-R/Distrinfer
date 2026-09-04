@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from .Llama_Node.inference_node import infer, live
 from typing import Annotated
 import hashlib
@@ -11,6 +12,14 @@ import json
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # your Vite dev server URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 DATABASE_URL = "postgresql://postgres:sarangi@192.168.1.8:5432/Distrinfer"
 engine = create_engine(DATABASE_URL, echo = False)
