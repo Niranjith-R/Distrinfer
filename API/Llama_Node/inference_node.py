@@ -5,8 +5,9 @@ from llama_cpp import Llama
 import json
 from socket import gethostname
 from os import getenv
+from dotenv import load_dotenv
 
-
+load_dotenv()
 
 conn = curse = llm = None
 
@@ -24,7 +25,7 @@ def init_worker(**kwargs):
 
     # Add you Database Connection here
     
-    conn = psycopg2.connect(host = getenv("db_host", 'localhost'), dbname = getenv("db_name","Distrinfer"), user = getenv("db_user","postgres"), password = getenv("db_pass",'postgres'))
+    conn = psycopg2.connect(host = getenv("db_host"), dbname = getenv("db_name"), user = getenv("db_user"), password = getenv("db_pass"))
     curse = conn.cursor()
     llm = Llama.from_pretrained(
         repo_id=getenv("repo_id", default="Qwen/Qwen2.5-0.5B-Instruct-GGUF"),
@@ -44,8 +45,8 @@ def infer(input):
                 # {"role" : "system", "content" : "You are an assistant"},
                 {"role" : "user", "content" : prompt},
             ],
-            stream=False,
-            max_tokens=512
+            stream=getenv("stream", False),
+            max_tokens=getenv("max_tokens", 1024)
         )
     
     update_infer_sql = "UPDATE DATA SET infer = %s, status = %s, host = %s WHERE hash = %s"

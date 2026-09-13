@@ -8,8 +8,11 @@ from sqlalchemy.dialects.postgresql import JSONB
 from enum import Enum
 import time
 import json
+from dotenv import load_dotenv
+from os import getenv
 
 
+load_dotenv()
 
 
 app = FastAPI()
@@ -22,7 +25,7 @@ app.add_middleware(
 )
 
 
-DATABASE_URL = "postgresql://postgres:sarangi@192.168.1.8:5432/Distrinfer"
+DATABASE_URL = getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL, echo = False)
 
 
@@ -110,13 +113,5 @@ async def view_data(prompt_id : str, session : Session_dep):
     statement = select(Data).where(Data.hash == prompt_id)
     Results = session.exec(statement)
     for result in Results :
-        # return {
-        #     "id" : f"{prompt_id}",
-        #     "status" : result.status,
-        #     "Data" : {
-        #         "host" : result.host,
-        #         "prompt" : result.prompt,
-        #         "infered" : result.infer
-        #     }
-        #     }
+        result.infer["host"] = result.host
         return result.infer
