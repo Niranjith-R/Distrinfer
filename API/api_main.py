@@ -4,6 +4,7 @@ from .Llama_Node.inference_node import infer, live
 from typing import Annotated
 import hashlib
 from sqlmodel import SQLModel, Field, create_engine, Session, select
+from sqlalchemy.dialects.postgresql import JSONB
 from enum import Enum
 import time
 import json
@@ -34,22 +35,11 @@ class Status(Enum):
 class Data(SQLModel, table = True):
     id: int | None = Field(default=None, primary_key=True)
     prompt : str = Field(nullable = False)
-    infer : str = Field(default = "-")
+    # infer : str = Field(default = "-")
+    infer: dict = Field(default=None, sa_type=JSONB)
     status : Status = Field(default = Status.Pending, nullable = False)
     host: str | None = Field(default=None, nullable=True)
     hash : str = Field(default=None, nullable= True)
-    # UID : int = Field(default = None, nullable = False)
-    
-    # User_id : int = Field(default = None, foreign_key = "user.id")
-    # user : User = Relationship(back_populates = "User")
-
-# class User(SQLModel, table = True):
-#     id : int = Field(default = None, primary_key = True, nullable = False)
-#     username : str = Field(nullable = False)
-#     # Find the proper way to store passwords
-#     # Found it, Argon2id
-#     passwrd : str = Field(default = None, nullable = False)
-#     UID : int = Field(default = None)
 
 
 class Live_Model(SQLModel, table = False):
@@ -74,7 +64,7 @@ def on_startup():
 
 
 @app.post("/")
-async def live_raw_data(prompt: Live_Model, session : Session_dep):
+def live_raw_data(prompt: Live_Model, session : Session_dep):
 
     infered_data = live.delay(prompt.prompt)
 
@@ -115,67 +105,18 @@ async def inference(prompt : Data, session : Session_dep):
         "hash" : hex
     }
 
-
 @app.get("/query/{prompt_id}")
 async def view_data(prompt_id : str, session : Session_dep):
     statement = select(Data).where(Data.hash == prompt_id)
     Results = session.exec(statement)
     for result in Results :
-        return {
-            "id" : f"{prompt_id}",
-            "status" : result.status,
-            "Data" : {
-                "host" : result.host,
-                "prompt" : result.prompt,
-                "infered" : result.infer
-            }
-            }
-
-
-
-
-
-
-# @app.get("/user")
-# async def list_users(session : Session_dep):
-#     statement = select(User)
-#     Users = session.exec(statement)
-#     data = []
-#     for user in Users:
-#         data.append(user)
-#     return {"Current Users" : data}
-
-
-# @app.post("/user")
-# async def create_user(content : User, session : Session_dep):
-#     session.add(content)
-#     session.commit()
-#     session.refresh(content)
-#     return content
-
-# @app.put("/user/{user}")
-# async def update_user(content : User, user : str, session : Session_dep):
-#     statement = select(User).where(User.UID == user)
-#     result = session.exec(statement)
-#     print("here")
-#     data_obj = result.one()
-#     data_cpy = data_obj.model_copy()
-#     data_obj.id = content.id
-#     data_obj.username = content.username
-#     data_obj.passwrd = content.passwrd
-#     data_obj.UID = content.UID
-#     print("Here")
-#     session.commit()
-#     session.refresh(data_obj)
-#     return {"old" : data_cpy,
-#             "new" : data_obj}
-
-# @app.delete("/user/{user}")
-# async def delete_user(user : int, session : Session_dep):
-#     statement = select(User).where(User.UID == user)
-#     result = session.exec(statement).first()
-#     if not result:
-#         raise HTTPException(status_code=404, detail= "Entry Not Found")
-#     session.delete(result)
-#     session.commit()
-#     return {"status" : "ok" }
+        # return {
+        #     "id" : f"{prompt_id}",
+        #     "status" : result.status,
+        #     "Data" : {
+        #         "host" : result.host,
+        #         "prompt" : result.prompt,
+        #         "infered" : result.infer
+        #     }
+        #     }
+        return result.infer
