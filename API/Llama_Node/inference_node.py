@@ -14,8 +14,8 @@ conn = curse = llm = None
 #Add RabbitMQ connection details as broker and database url as Backend
 
 app = Celery("inference_node",
-              broker="- - - - - - -",
-              backend="- - - - - - -"
+              broker=getenv("broker"),
+              backend=getenv("backend")
              )
 
 
